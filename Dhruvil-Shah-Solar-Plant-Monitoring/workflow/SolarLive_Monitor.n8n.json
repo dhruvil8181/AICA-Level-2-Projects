@@ -1,0 +1,1081 @@
+{
+  "name": "SolarLive Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "1dc267eb-12af-48dd-b922-f3d6d8e012a1",
+      "name": "Daily 8 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mode-daily",
+              "name": "mode",
+              "value": "daily",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6c6f2c5f-618a-4a5b-aff2-b4cb24f660c1",
+      "name": "Mode: Daily",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sl-user",
+              "name": "username",
+              "value": "YOUR_SOLARLIVE_USERNAME",
+              "type": "string"
+            },
+            {
+              "id": "sl-pass",
+              "name": "password",
+              "value": "YOUR_SOLARLIVE_PASSWORD",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "a3350f4f-fd06-494d-9c62-7afef9a7c0e3",
+      "name": "Login Details",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9,11,13,15,17 * * *"
+            }
+          ]
+        }
+      },
+      "id": "37be29e3-0949-43dc-92d3-bb3678d341a8",
+      "name": "Health Check 9-11-13-15-17",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mode-health",
+              "name": "mode",
+              "value": "health",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3573352a-c8b3-4673-aeeb-43d72f406934",
+      "name": "Mode: Health Check",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 8,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "id": "d3aa8cb3-22db-47b7-9bbf-82334eacae7a",
+      "name": "Monthly 1st 8:30 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mode-monthly",
+              "name": "mode",
+              "value": "monthly",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6095f9d4-9ddc-4d36-a300-d82de7571f5d",
+      "name": "Mode: Monthly Report",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://app.solarlive.in/accounts/login/",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "99292c3e-0fcf-44fb-a378-f21f9f9514c9",
+      "name": "Open Login Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        928,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst raw = (typeof res.data === 'string' && res.data) || (typeof res.body === 'string' && res.body) || JSON.stringify(res.data || res.body || '');\nconst html = String(raw);\nconst m = html.match(/name=[\"']csrfmiddlewaretoken[\"'][^>]*value=[\"']([^\"']+)[\"']/) || html.match(/value=[\"']([^\"']+)[\"'][^>]*name=[\"']csrfmiddlewaretoken[\"']/);\nconst sc = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || [];\nconst arr = Array.isArray(sc) ? sc : [sc];\nconst csrfCookie = arr.map(function (c) { return String(c).split(';')[0]; }).filter(function (c) { return c.indexOf('csrftoken=') === 0; })[0];\nif (!m || !csrfCookie) { throw new Error('SolarLive login page did not return a security token'); }\nlet mode = 'daily';\nif ($('Mode: Health Check').isExecuted) { mode = 'health'; }\nelse if ($('Mode: Monthly Report').isExecuted) { mode = 'monthly'; }\nreturn [{ json: { csrfToken: m[1], csrfCookie: csrfCookie, mode: mode } }];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "627d2f64-543d-4da1-97f2-16f7b863be18",
+      "name": "Read Login Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.solarlive.in/accounts/login/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ $(\"Read Login Token\").first().json.csrfCookie }}"
+            },
+            {
+              "name": "Referer",
+              "value": "https://app.solarlive.in/accounts/login/"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "csrfmiddlewaretoken",
+              "value": "={{ $(\"Read Login Token\").first().json.csrfToken }}"
+            },
+            {
+              "name": "username",
+              "value": "={{ $(\"Login Details\").first().json.username }}"
+            },
+            {
+              "name": "password",
+              "value": "={{ $(\"Login Details\").first().json.password }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "9c06a2a8-af3b-4876-85a6-cdfc9c8564e4",
+      "name": "Submit Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1360,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst prev = $('Read Login Token').first().json;\nconst sc = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || [];\nconst arr = Array.isArray(sc) ? sc : [sc];\nconst parts = arr.map(function (c) { return String(c).split(';')[0]; });\nconst session = parts.filter(function (c) { return c.indexOf('sessionid=') === 0; })[0];\nconst csrf = parts.filter(function (c) { return c.indexOf('csrftoken=') === 0; })[0] || prev.csrfCookie;\nconst ok = !!session;\nreturn [{ json: { loginOk: ok, cookie: ok ? session + '; ' + csrf : '', mode: prev.mode, httpStatus: res.statusCode } }];"
+      },
+      "id": "c408959e-2f05-4a24-bb03-3a73ac764007",
+      "name": "Check Login",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.loginOk }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "97f2e22a-36b2-4d05-8f22-be752853ad4d",
+      "name": "Login OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1808,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PLANTS = [{ id: 446 }, { id: 444 }, { id: 445 }];\nconst login = $input.first().json;\nconst mode = login.mode;\nconst cookie = login.cookie;\nconst ist = new Date(Date.now() + 19800000);\nfunction md(d) { return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear(); }\nconst yest = new Date(ist.getTime() - 86400000);\nconst monthStartYest = new Date(Date.UTC(yest.getUTCFullYear(), yest.getUTCMonth(), 1));\nconst monthStartBefore = new Date(Date.UTC(yest.getUTCFullYear(), yest.getUTCMonth() - 1, 1));\nconst prevMonth = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1));\nconst base = 'https://app.solarlive.in';\nconst items = [];\nfunction add(kind, p, url) { items.push({ json: { kind: kind, plantId: p.id, url: base + url, cookie: cookie, mode: mode } }); }\nPLANTS.forEach(function (p) {\n  if (mode === 'daily') {\n    add('day', p, '/api/data/?site=' + p.id + '&parameters=INV_PLANT_GENERATION,INV_PLANT_CUF,INV_PLANT_REVENUE&date=' + md(yest));\n    add('inv', p, '/api/data/?site=' + p.id + '&parameters=DAILY_KWH&group_by=device&range_type=day&date=' + md(yest));\n    add('mtd', p, '/api/data/?site=' + p.id + '&parameters=INV_PLANT_GENERATION&range_type=month&date=' + md(monthStartYest));\n    add('alerts', p, '/api/alerts/?site=' + p.id + '&status=open');\n    add('trend1', p, '/api/data/?site=' + p.id + '&parameters=INV_PLANT_GENERATION,INV_PLANT_CUF&range_type=month&date=' + md(monthStartYest));\n    add('trend0', p, '/api/data/?site=' + p.id + '&parameters=INV_PLANT_GENERATION,INV_PLANT_CUF&range_type=month&date=' + md(monthStartBefore));\n  } else if (mode === 'health') {\n    add('status', p, '/fetch_data/?parameter=PLANT_DAY_GEN&operation=sum&sites=' + p.id);\n    add('alerts', p, '/api/alerts/?site=' + p.id + '&status=open');\n  } else {\n    add('month', p, '/api/data/?site=' + p.id + '&parameters=INV_PLANT_GENERATION&range_type=month&date=' + md(prevMonth));\n  }\n});\nreturn items;"
+      },
+      "id": "40911d08-e4d0-4f0b-a409-dab823cacd4b",
+      "name": "Plan Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "={{ $json.cookie }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 300
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "7fc22efd-4905-4168-bae9-0c64a2357c3e",
+      "name": "Fetch SolarLive Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PLANTS = {\n  446: { name: 'Agastya Solar (Umarda, Kota)', short: 'Agastya', dc: 1387.1, tariff: 2.88 },\n  444: { name: 'White Screen Solar (Dhanpura AG / Magriwada)', short: 'Dhanpura-Magriwada', dc: 2402.4, tariff: 2.91 },\n  445: { name: 'White Screen Solar (Nimbaj)', short: 'Nimbaj', dc: 2402.4, tariff: 2.79 }\n};\nconst TARGETS = { 1: 5.0, 2: 5.0, 3: 5.75, 4: 5.75, 5: 5.75, 6: 5.75, 7: 4.25, 8: 4.25, 9: 4.25, 10: 5.0, 11: 5.0, 12: 5.0 };\nconst ROUTINE_TO = 'recipient@example.com';\nconst EMERGENCY_TO = 'recipient@example.com';\nconst TEST_RUN = $execution.mode === 'test';\nconst MAIL_TO = ROUTINE_TO;\nconst SUBJ = TEST_RUN ? 'TEST - ' : '';\nconst reqs = $('Plan Requests').all();\nconst resp = $input.all();\nconst mode = reqs.length ? reqs[0].json.mode : 'daily';\nconst ist = new Date(Date.now() + 19800000);\nfunction pad(n) { return n < 10 ? '0' + n : '' + n; }\nfunction iso(d) { return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }\nfunction dmy(d) { return pad(d.getUTCDate()) + '-' + pad(d.getUTCMonth() + 1) + '-' + d.getUTCFullYear(); }\nfunction num(n, dp) { const f = Math.pow(10, dp === undefined ? 0 : dp); return (Math.round(n * f) / f).toLocaleString('en-IN'); }\nfunction series(j, param) { const reps = (j && j.other_reports) || []; const hit = reps.filter(function (x) { return x.parameter === param; })[0]; return hit && hit.reports ? hit.reports : []; }\nfunction lastNum(arr) { let v = null; arr.forEach(function (x) { if (typeof x.value === 'number') { v = x.value; } }); return v; }\nconst TD = 'style=\"border:1px solid #999;padding:4px 8px;text-align:right\"';\nconst TDL = 'style=\"border:1px solid #999;padding:4px 8px;text-align:left\"';\nconst TH = 'style=\"border:1px solid #999;padding:4px 8px;text-align:center;background:#eee\"';\nconst wrapOpen = '<div style=\"font-family:Times New Roman,serif;font-size:14px;color:#111;line-height:1.5\">';\nconst data = {};\nfor (let i = 0; i < resp.length; i++) {\n  const r = reqs[i].json;\n  if (!data[r.plantId]) { data[r.plantId] = {}; }\n  data[r.plantId][r.kind] = resp[i].json;\n}\nconst ids = Object.keys(PLANTS);\nconst out = [];\n\nif (mode === 'health') {\n  const sd = $getWorkflowStaticData('global');\n  const firstRun = !sd.seenAlerts;\n  if (!sd.seenAlerts) { sd.seenAlerts = []; }\n  if (!sd.lastGen) { sd.lastGen = {}; }\n  const hour = ist.getUTCHours();\n  const todayIso = iso(ist);\n  const issues = [];\n  ids.forEach(function (id) {\n    const P = PLANTS[id];\n    const d = data[id] || {};\n    const rep = d.status && d.status.reports && d.status.reports[0];\n    if (!rep) { issues.push(P.short + ': no data received from SolarLive'); return; }\n    if (rep.status !== 'active') { issues.push(P.short + ': plant status is ' + rep.status); }\n    const gen = rep.value;\n    const prev = sd.lastGen[id];\n    if (hour >= 10 && hour <= 15) {\n      if (gen < 1) {\n        issues.push(P.short + ': no generation recorded today at ' + pad(hour) + ':00');\n      } else if (prev && prev.date === todayIso && (Date.now() - prev.ts) >= 5400000 && (gen - prev.gen) < 5) {\n        issues.push(P.short + ': generation has not increased since the last check (' + num(gen, 1) + ' kWh today)');\n      }\n    }\n    sd.lastGen[id] = { date: todayIso, gen: gen, ts: Date.now() };\n    const alerts = (d.alerts && d.alerts.results) || [];\n    alerts.forEach(function (a) {\n      if (sd.seenAlerts.indexOf(a.id) === -1) {\n        sd.seenAlerts.push(a.id);\n        if (!firstRun) { issues.push(P.short + ': new alert - ' + a.alert + ' (' + a.device + ', since ' + a.start_time_str + ')'); }\n      }\n    });\n  });\n  if (sd.seenAlerts.length > 300) { sd.seenAlerts = sd.seenAlerts.slice(-200); }\n  if (!issues.length) { return []; }\n  let html = wrapOpen + '<p>The following need your attention (checked ' + dmy(ist) + ' ' + pad(hour) + ':' + pad(ist.getUTCMinutes()) + ' IST):</p><ul>';\n  issues.forEach(function (t) { html += '<li>' + t + '</li>'; });\n  html += '</ul><p>Please check SolarLive for details.</p></div>';\n  out.push({ json: { type: 'emergency', to: EMERGENCY_TO, subject: 'Emergency: Need your attention - SolarLive (' + dmy(ist) + ' ' + pad(hour) + ':00)', html: html } });\n  return out;\n}\n\nif (mode === 'daily') {\n  const y = new Date(ist.getTime() - 86400000);\n  const yIso = iso(y);\n  const yDay = y.getUTCDate();\n  const tgt = TARGETS[y.getUTCMonth() + 1];\n  let html = wrapOpen + '<p>Daily generation summary for <b>' + dmy(y) + '</b>. All capacities are DC. Target this month: <b>' + tgt + ' kWh per kWp per day</b> (winter Nov-Feb 5.0, Mar-Jun 5.75, monsoon Jul-Sep 4.25, Oct 5.0).</p>';\n  let totGen = 0;\n  let totExp = 0;\n  let totMtd = 0;\n  let totMtdTarget = 0;\n  let totDayTarget = 0;\n  ids.forEach(function (id) {\n    const P = PLANTS[id];\n    const kw = P.dc;\n    const d = data[id] || {};\n    const gen = lastNum(series(d.day, 'INV_PLANT_GENERATION'));\n    const cuf = lastNum(series(d.day, 'INV_PLANT_CUF'));\n    const rev = lastNum(series(d.day, 'INV_PLANT_REVENUE'));\n    const exp = gen === null ? null : gen * P.tariff;\n    const invs = ((d.inv && d.inv.other_reports) || []).map(function (x) {\n      let m = 0;\n      (x.reports || []).forEach(function (r) { if (String(r.time).indexOf(yIso) === 0 && typeof r.value === 'number' && r.value > m) { m = r.value; } });\n      return { dev: x.device, kwh: m };\n    });\n    const avg = invs.length ? invs.reduce(function (s, x) { return s + x.kwh; }, 0) / invs.length : 0;\n    const weak = invs.filter(function (x) { return avg > 0 && x.kwh < avg * 0.85; });\n    const mrows = series(d.mtd, 'INV_PLANT_GENERATION').filter(function (r) { return String(r.time).slice(0, 10) <= yIso; });\n    let mtd = 0;\n    let have = 0;\n    mrows.forEach(function (r) { if (typeof r.value === 'number') { mtd += r.value; have += 1; } });\n    const missing = yDay - have;\n    const mtdTarget = kw * tgt * yDay;\n    const alerts = (d.alerts && d.alerts.results) || [];\n    if (gen !== null) { totGen += gen; totExp += exp; }\n    totMtd += mtd;\n    totMtdTarget += mtdTarget;\n    totDayTarget += kw * tgt;\n    html += '<p style=\"margin-bottom:2px\"><b>' + P.name + '</b> (' + num(P.dc, 1) + ' kWp DC, tariff Rs. ' + P.tariff + '/kWh)</p>';\n    if (gen === null) {\n      html += '<p>No generation data received for this day.</p>';\n    } else {\n      html += '<table style=\"border-collapse:collapse\"><tr><td ' + TDL + '>Generation</td><td ' + TD + '>' + num(gen, 1) + ' kWh (' + num(gen / kw, 2) + ' kWh per kWp; target ' + num(kw * tgt) + ' kWh; ' + num(gen / (kw * tgt) * 100) + '% of target achieved)</td></tr>';\n      html += '<tr><td ' + TDL + '>CUF</td><td ' + TD + '>' + (cuf === null ? '-' : num(cuf, 2) + ' %') + '</td></tr>';\n      html += '<tr><td ' + TDL + '>Expected earnings at PPA tariff</td><td ' + TD + '>Rs. ' + num(exp) + '</td></tr>';\n      html += '<tr><td ' + TDL + '>Month to date</td><td ' + TD + '>' + num(mtd, 1) + ' kWh (' + num(mtd / kw / yDay, 2) + ' kWh per kWp per day) against target ' + num(mtdTarget) + ' kWh = ' + num(mtd / mtdTarget * 100) + '% (Rs. ' + num(mtd * P.tariff) + ')' + (missing > 0 ? ' - ' + missing + ' day(s) without SolarLive data' : '') + '</td></tr></table>';\n    }\n    if (invs.length) {\n      html += '<p style=\"margin:4px 0\">Inverters (kWh): ' + invs.map(function (x) { return x.dev + ' ' + num(x.kwh); }).join(', ') + '</p>';\n      if (weak.length) { html += '<p style=\"margin:4px 0\"><b>Below 85% of inverter average:</b> ' + weak.map(function (x) { return x.dev; }).join(', ') + '</p>'; }\n    }\n    if (alerts.length) {\n      html += '<p style=\"margin:4px 0\"><b>Open alerts (' + alerts.length + '):</b></p><ul style=\"margin-top:0\">';\n      alerts.forEach(function (a) { html += '<li>' + a.alert + ' (' + a.device + ') since ' + a.start_time_str + '</li>'; });\n      html += '</ul>';\n    } else {\n      html += '<p style=\"margin:4px 0\">No open alerts.</p>';\n    }\n    if (!TEST_RUN) {\n      out.push({ json: { type: 'sheet_row', sheet: P.short, Date: dmy(y), Plant: P.name, Generation_kWh: gen, CUF_pct: cuf, Tariff: P.tariff, Expected_Earnings_INR: exp === null ? null : Math.round(exp), SolarLive_Revenue_INR: rev, Inverter_kWh: invs.map(function (x) { return x.dev + ':' + Math.round(x.kwh); }).join('; '), Open_Alerts: alerts.length, MTD_kWh: Math.round(mtd) } });\n    }\n  });\n  html += '<p><b>All plants:</b> yesterday ' + num(totGen, 1) + ' kWh against target ' + num(totDayTarget) + ' kWh (' + num(totGen / totDayTarget * 100) + '%), expected earnings Rs. ' + num(totExp) + '.<br><b>All plants, month to date:</b> ' + num(totMtd) + ' kWh against target ' + num(totMtdTarget) + ' kWh (' + num(totMtd / totMtdTarget * 100) + '%).</p>';\n  const TREND_ORDER = ['445', '444', '446'];\n  const TREND_HEAD = { 445: 'Nimbaj', 444: 'Magriwada', 446: 'Umarda' };\n  const trend = {};\n  TREND_ORDER.forEach(function (id) {\n    const d = data[id] || {};\n    const m = {};\n    ['trend0', 'trend1'].forEach(function (k) {\n      series(d[k], 'INV_PLANT_GENERATION').forEach(function (r) { if (typeof r.value === 'number') { const key = String(r.time).slice(0, 10); m[key] = m[key] || {}; m[key].gen = r.value; } });\n      series(d[k], 'INV_PLANT_CUF').forEach(function (r) { if (typeof r.value === 'number') { const key = String(r.time).slice(0, 10); m[key] = m[key] || {}; m[key].cuf = r.value; } });\n    });\n    trend[id] = m;\n  });\n  const tot = {};\n  TREND_ORDER.forEach(function (id) { tot[id] = { gen: 0, cufSum: 0, n: 0 }; });\n  let th = '<p style=\"margin-bottom:2px\"><b>Last 15 days comparison</b></p><table style=\"border-collapse:collapse\"><tr><th ' + TH + ' rowspan=\"2\">Date</th>';\n  TREND_ORDER.forEach(function (id) { th += '<th ' + TH + ' colspan=\"2\">' + TREND_HEAD[id] + '</th>'; });\n  th += '</tr><tr>';\n  TREND_ORDER.forEach(function () { th += '<th ' + TH + '>Generation (kWh)</th><th ' + TH + '>CUF (%)</th>'; });\n  th += '</tr>';\n  for (let k = 0; k < 15; k++) {\n    const dd = new Date(y.getTime() - k * 86400000);\n    const key = iso(dd);\n    th += '<tr><td ' + TDL + '>' + dmy(dd) + '</td>';\n    TREND_ORDER.forEach(function (id) {\n      const v = (trend[id] || {})[key] || {};\n      th += '<td ' + TD + '>' + (typeof v.gen === 'number' ? num(v.gen, 1) : '-') + '</td><td ' + TD + '>' + (typeof v.cuf === 'number' ? num(v.cuf, 2) : '-') + '</td>';\n      if (typeof v.gen === 'number') { tot[id].gen += v.gen; }\n      if (typeof v.cuf === 'number') { tot[id].cufSum += v.cuf; tot[id].n += 1; }\n    });\n    th += '</tr>';\n  }\n  th += '<tr><td ' + TDL + '><b>Total / Avg CUF</b></td>';\n  TREND_ORDER.forEach(function (id) { th += '<td ' + TD + '><b>' + num(tot[id].gen, 1) + '</b></td><td ' + TD + '><b>' + (tot[id].n ? num(tot[id].cufSum / tot[id].n, 2) : '-') + '</b></td>'; });\n  th += '</tr></table><p style=\"margin:4px 0\">Latest day first. Days without SolarLive data are shown as -. CUF is as reported by SolarLive.</p>';\n  html += th + '</div>';\n  out.unshift({ json: { type: 'routine_email', to: MAIL_TO, subject: SUBJ + 'Solar generation summary - ' + dmy(y), html: html } });\n  return out;\n}\n\nconst pm = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() - 1, 1));\nconst daysInMonth = new Date(Date.UTC(pm.getUTCFullYear(), pm.getUTCMonth() + 1, 0)).getUTCDate();\nconst monthName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][pm.getUTCMonth()];\nconst mtgt = TARGETS[pm.getUTCMonth() + 1];\nlet html = wrapOpen + '<p>Monthly generation report for <b>' + monthName + ' ' + pm.getUTCFullYear() + '</b>. All capacities are DC. Target: <b>' + mtgt + ' kWh per kWp per day</b> (winter Nov-Feb 5.0, Mar-Jun 5.75, monsoon Jul-Sep 4.25, Oct 5.0).</p>';\nhtml += '<table style=\"border-collapse:collapse\"><tr><th ' + TDL + '>Plant</th><th ' + TD + '>Generation (kWh)</th><th ' + TD + '>Days with data</th><th ' + TD + '>kWh per kWp per day</th><th ' + TD + '>Target for days with data (kWh)</th><th ' + TD + '>% of target</th><th ' + TD + '>Best day</th><th ' + TD + '>Lowest day</th><th ' + TD + '>Expected earnings (Rs.)</th></tr>';\nlet gTot = 0;\nlet gExp = 0;\nlet gTarget = 0;\nids.forEach(function (id) {\n  const P = PLANTS[id];\n  const kw = P.dc;\n  const rows = series((data[id] || {}).month, 'INV_PLANT_GENERATION').filter(function (r) { return typeof r.value === 'number'; });\n  let tot = 0;\n  let best = null;\n  let low = null;\n  rows.forEach(function (r) {\n    tot += r.value;\n    if (!best || r.value > best.value) { best = r; }\n    if (!low || r.value < low.value) { low = r; }\n  });\n  const exp = tot * P.tariff;\n  const target = kw * mtgt * rows.length;\n  gTot += tot;\n  gExp += exp;\n  gTarget += target;\n  html += '<tr><td ' + TDL + '>' + P.short + ' (Rs. ' + P.tariff + ')</td><td ' + TD + '>' + num(tot) + '</td><td ' + TD + '>' + rows.length + ' of ' + daysInMonth + '</td><td ' + TD + '>' + (rows.length ? num(tot / rows.length / kw, 2) : '-') + '</td><td ' + TD + '>' + num(target) + '</td><td ' + TD + '>' + num(tot / target * 100) + '%</td><td ' + TD + '>' + (best ? num(best.value) + ' (' + String(best.time).slice(8, 10) + ')' : '-') + '</td><td ' + TD + '>' + (low ? num(low.value) + ' (' + String(low.time).slice(8, 10) + ')' : '-') + '</td><td ' + TD + '>' + num(exp) + '</td></tr>';\n});\nhtml += '<tr><td ' + TDL + '><b>Total</b></td><td ' + TD + '><b>' + num(gTot) + '</b></td><td ' + TD + '></td><td ' + TD + '></td><td ' + TD + '><b>' + num(gTarget) + '</b></td><td ' + TD + '><b>' + num(gTot / gTarget * 100) + '%</b></td><td ' + TD + '></td><td ' + TD + '></td><td ' + TD + '><b>' + num(gExp) + '</b></td></tr></table>';\nhtml += '<p>The target for each plant is its DC capacity (2,402.4 kWp for Nimbaj and Magriwada, 1,387.1 kWp for Agastya) multiplied by the monthly target per kWp per day and the number of days SolarLive has data for, so missing days do not lower the percentage. Generation for the missing days is not included in the totals. Expected earnings are generation multiplied by the PPA tariff. The Discom bill is based on exported units, which are normally slightly lower than generation.</p></div>';\nout.push({ json: { type: 'routine_email', to: MAIL_TO, subject: SUBJ + 'Monthly solar report - ' + monthName + ' ' + pm.getUTCFullYear(), html: html } });\nreturn out;\n",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      },
+      "id": "203c8653-bde1-45ca-9389-f0579c83f37f",
+      "name": "Assemble Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "routine_email"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "sheet_row"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "emergency"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "11907d74-4805-4259-8a40-f5fb5c2ca141",
+      "name": "Route Output",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2688,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Add Diagnostics').all().filter(function(i){return i.json.type==='routine_email';})[0].json.to }}",
+        "subject": "={{ $('Add Diagnostics').all().filter(function(i){return i.json.type==='routine_email';})[0].json.subject }}",
+        "message": "={{ $('Add Diagnostics').all().filter(function(i){return i.json.type==='routine_email';})[0].json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "7b09ebfb-bd75-4b49-9a30-3c45afd704b2",
+      "name": "Send Routine Mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3864,
+        208
+      ],
+      "webhookId": "10dcf9b2-97b0-4266-98e0-37142e9260a3"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "cachedResultName": "SolarLive Daily Log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.sheet }}"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Plant": "={{ $json.Plant }}",
+            "Generation_kWh": "={{ $json.Generation_kWh }}",
+            "CUF_pct": "={{ $json.CUF_pct }}",
+            "Tariff": "={{ $json.Tariff }}",
+            "Expected_Earnings_INR": "={{ $json.Expected_Earnings_INR }}",
+            "SolarLive_Revenue_INR": "={{ $json.SolarLive_Revenue_INR }}",
+            "Inverter_kWh": "={{ $json.Inverter_kWh }}",
+            "Open_Alerts": "={{ $json.Open_Alerts }}",
+            "MTD_kWh": "={{ $json.MTD_kWh }}"
+          },
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Plant",
+              "displayName": "Plant",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Generation_kWh",
+              "displayName": "Generation_kWh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CUF_pct",
+              "displayName": "CUF_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tariff",
+              "displayName": "Tariff",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expected_Earnings_INR",
+              "displayName": "Expected_Earnings_INR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SolarLive_Revenue_INR",
+              "displayName": "SolarLive_Revenue_INR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Inverter_kWh",
+              "displayName": "Inverter_kWh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Open_Alerts",
+              "displayName": "Open_Alerts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MTD_kWh",
+              "displayName": "MTD_kWh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0da269e5-aaed-46bb-b7ec-34b9599758af",
+      "name": "Log Daily Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2912,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "c45aa3f5-9bba-4dbc-9b0c-080ce0360b42",
+      "name": "Send Emergency Mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2912,
+        528
+      ],
+      "webhookId": "a7d8290e-f83b-4b71-9f41-5671e362c38b"
+    },
+    {
+      "parameters": {
+        "sendTo": "recipient@example.com",
+        "subject": "Emergency: Need your attention - SolarLive login failed",
+        "emailType": "text",
+        "message": "=SolarLive monitoring could not sign in (HTTP status {{ $json.httpStatus }}). Automatic checks did not run. Please check the SolarLive username and password saved in the n8n workflow \"SolarLive Monitor\".",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "dadbd1c2-e956-4944-a0dd-003815f7e013",
+      "name": "Emergency: Login Failed",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2032,
+        560
+      ],
+      "webhookId": "bb8385c2-1306-4b80-8ad3-1cb6bdca3e49"
+    },
+    {
+      "parameters": {
+        "content": "## Before first run\n1. In \"Login Details\" enter the SolarLive username and password.\n2. In \"Log Daily Row\" pick the Google Sheet. It needs one tab per plant named Agastya, Dhanpura-Magriwada and Nimbaj, with these headers in row 1: Date, Plant, Generation_kWh, CUF_pct, Tariff, Expected_Earnings_INR, SolarLive_Revenue_INR, Inverter_kWh, Open_Alerts, MTD_kWh.\n3. Check the workflow timezone is Asia/Kolkata.\n4. Tariffs and recipients are at the top of the \"Assemble Report\" code.",
+        "height": 224,
+        "width": 160,
+        "color": 4
+      },
+      "id": "3080cd9e-7ada-4a36-a102-7752c962e54e",
+      "name": "Sticky Note 5578197a",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        672,
+        304
+      ]
+    },
+    {
+      "id": "8eec96dc-3b81-4298-9e5c-bd5f5483da2a",
+      "name": "Add Diagnostics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2576,
+        440
+      ],
+      "parameters": {
+        "jsCode": "const PLANTS={446:{short:'Umarda',dc:1387.1},444:{short:'Magriwada',dc:2402.4},445:{short:'Nimbaj',dc:2402.4}};const TARGETS={1:5,2:5,3:5.75,4:5.75,5:5.75,6:5.75,7:4.25,8:4.25,9:4.25,10:5,11:5,12:5};const INV_MODULES={444:[546,546,546,546,546,546,546,546],445:[546,546,546,546,546,546,546,546],446:[520,520,520,494,494]};const ORDER=['445','444','446'];const items=$input.all();const routine=items.filter(function(it){return it.json.type==='routine_email';})[0];if(!routine){return items;}const reqs=$('Plan Requests').all();const mode=reqs.length?reqs[0].json.mode:'daily';const ist=new Date(Date.now()+19800000);function pad(n){return n<10?'0'+n:''+n;}function iso(d){return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate());}function dmy(d){return pad(d.getUTCDate())+'-'+pad(d.getUTCMonth()+1)+'-'+d.getUTCFullYear();}function num(n,dp){const f=Math.pow(10,dp===undefined?0:dp);return (Math.round(n*f)/f).toLocaleString('en-IN');}function series(j,p){const reps=(j&&j.other_reports)||[];const hit=reps.filter(function(x){return x.parameter===p;})[0];return hit&&hit.reports?hit.reports:[];}function lastNum(arr){let v=null;arr.forEach(function(x){if(typeof x.value==='number'){v=x.value;}});return v;}const TD=`style='border:1px solid #999;padding:4px 8px;text-align:right'`;const TDL=`style='border:1px solid #999;padding:4px 8px;text-align:left'`;const TH=`style='border:1px solid #999;padding:4px 8px;text-align:center;background:#eee'`;let html=routine.json.html;let htmlGen=html;let title='Monthly Solar Generation Report';let pdfName='Solar_Monthly_Report_'+dmy(ist)+'.pdf';let obsHtml='';let obsName='';const wa={};if(mode==='daily'){const y=new Date(ist.getTime()-86400000);const yIso=iso(y);const tgt=TARGETS[y.getUTCMonth()+1];title='Daily Solar Generation Report - '+dmy(y);pdfName='Solar_Generation_Report_'+dmy(y)+'.pdf';obsName='Observation_'+dmy(y)+'.pdf';const data={};const resp=$('Fetch SolarLive Data').all();for(let i=0;i<resp.length;i++){const r=reqs[i].json;if(!data[r.plantId]){data[r.plantId]={};}data[r.plantId][r.kind]=resp[i].json;}const info={};ORDER.forEach(function(id){const P=PLANTS[id];const d=data[id]||{};const gen=lastNum(series(d.day,'INV_PLANT_GENERATION'));const mods=INV_MODULES[id];const invs=((d.inv&&d.inv.other_reports)||[]).map(function(x){let m=0;(x.reports||[]).forEach(function(r){if(String(r.time).indexOf(yIso)===0&&typeof r.value==='number'&&r.value>m){m=r.value;}});const mm=String(x.device).match(/[0-9]+/);const n=mm?parseInt(mm[0],10):0;const modules=mods[n-1]||mods[0];const kwp=modules*0.55;return {dev:x.device,n:n,kwh:m,modules:modules,kwp:kwp,yld:m/kwp};}).sort(function(a,b){return a.n-b.n;});let sk=0;let sp=0;invs.forEach(function(v){sk+=v.kwh;sp+=v.kwp;});info[id]={P:P,gen:gen,pct:gen===null?null:gen/(P.dc*tgt),invs:invs,avgY:sp?sk/sp:0,alerts:(d.alerts&&d.alerts.results)||[]};});const lowPlants=ORDER.filter(function(id){return info[id].pct!==null&&info[id].pct<0.9;});const qs=[];const rows=[];const planRows=[];const weakList=[];let dh=`<p style='margin-bottom:2px'><b>Inverter performance and problem summary</b></p><p style='margin:2px 0'>Inverters are compared on kWh per kWp on the assumption that every inverter in a plant has the same number of panels, as per the plant layout: 546 each at Nimbaj and Magriwada; Umarda 520 x 3 and 494 x 2 (one string fewer at one inverter, to be confirmed). If the actual panel count differs, the comparison below will change.</p>`;ORDER.forEach(function(id){const o=info[id];const P=o.P;if(!o.invs.length){return;}const pl=o.invs.map(function(v){return v.dev+': '+v.modules;}).join(', ');planRows.push({p:P.short,i:'All',t:'Panels assumed per inverter as per plant layout - '+pl+'. Is the actual installation the same as the plan? If any inverter has more or fewer panels than shown (or any string added, removed or disconnected), please give the actual number for each inverter.'});dh+=`<p style='margin:6px 0 2px'><b>`+P.short+`</b></p><table style='border-collapse:collapse'><tr>`+['Inverter','Panels','kWh','kWh per kWp','Vs plant average','Status'].map(function(h){return '<th '+TH+'>'+h+'</th>';}).join('')+'</tr>';o.invs.forEach(function(v){const rel=o.avgY?v.yld/o.avgY:0;let st='Average';if(v.kwh<=0){st='No output';}else if(rel<0.9){st='Weak';}else if(rel>=1.02){st='Strong';}dh+='<tr><td '+TDL+'>'+v.dev+'</td><td '+TD+'>'+v.modules+'</td><td '+TD+'>'+num(v.kwh)+'</td><td '+TD+'>'+num(v.yld,2)+'</td><td '+TD+'>'+num(rel*100)+'%</td><td '+TDL+'>'+st+'</td></tr>';if(st==='No output'){qs.push(P.short+' '+v.dev+' produced no energy yesterday. Why is it not generating? Was there a trip, grid fault, string or fuse failure or communication loss, and has it been reset or inspected?');rows.push({p:P.short,i:v.dev,t:'No generation yesterday while other inverters generated. Reason for stoppage (trip, grid fault, string or fuse failure, communication loss)? Action taken and time restored?'});weakList.push(P.short+' '+v.dev+' no output');}else if(st==='Weak'){const peers=o.invs.filter(function(w){return w.modules===v.modules&&w!==v;}).length;qs.push(P.short+' '+v.dev+' has '+v.modules+' panels (assumed), the same as '+peers+' other inverter(s), but produced '+num((1-rel)*100)+'% less per kWp than the plant average ('+num(v.yld,2)+' against '+num(o.avgY,2)+' kWh per kWp). Why is its output low compared with the other inverters? Please check dust or bird droppings, shading, a disconnected or faulty string or MPPT input, inverter trips or derating, loose connectors or cables, and whether the actual panel count differs from the plan.');rows.push({p:P.short,i:v.dev,t:'Generated '+num(v.yld,2)+' kWh per kWp against plant average '+num(o.avgY,2)+' ('+num((1-rel)*100)+'% lower) compared with other inverters, assuming same panel count ('+v.modules+'). Why is it low? Possible reasons: more dust or soiling, shading, string or MPPT fault, trip or derating, or actual panels fewer than assumed. Please state the reason and action taken.'});weakList.push(P.short+' '+v.dev+' '+num((1-rel)*100)+'% below plant average');}});dh+='</table>';});ORDER.forEach(function(id){const o=info[id];const P=o.P;if(o.pct!==null&&o.pct<0.9){const ctx=lowPlants.length===ORDER.length?'All plants are below target, so weather (cloud or haze) may be a main reason; please compare with the irradiation shown in SolarLive.':(lowPlants.length===1?'The other plants did better, so the cause is likely specific to this plant.':'Some other plants are also low, so part of the cause may be weather; please compare.');qs.push(P.short+' generated '+num(o.pct*100)+'% of its target ('+num(o.gen/P.dc,2)+' against '+tgt+' kWh per kWp). Why is the target not achieved? '+ctx+' Please check inverter trips or downtime hours, grid outage or curtailment, shading, soiling since the last cleaning, and open alerts.');rows.push({p:P.short,i:'All',t:'Generation '+num(o.pct*100)+'% of target ('+num(o.gen/P.dc,2)+' vs '+tgt+' kWh per kWp). Why is the target not achieved? Please check weather (compare irradiation in SolarLive), inverter downtime, grid outage, shading and dust since last cleaning. State date of last panel cleaning.'});}});let aq=0;ORDER.forEach(function(id){const o=info[id];o.alerts.forEach(function(a){if(aq>=6){return;}const t=String(a.alert)+' '+String(a.device);if(/grid|power cut|outage/i.test(t)){aq++;qs.push(o.P.short+': alert open - '+a.alert+' ('+a.device+') since '+a.start_time_str+'. Is the grid supply restored, and how many hours of generation were lost?');rows.push({p:o.P.short,i:a.device,t:a.alert+' open since '+a.start_time_str+'. Is supply restored? How many hours of generation were lost?'});}else if(/offline|communication|rms|no data/i.test(t)){aq++;qs.push(o.P.short+': alert open - '+a.alert+' ('+a.device+') since '+a.start_time_str+'. Monitoring or communication is down; is the data logger powered and connected to the internet? Readings may be incomplete.');rows.push({p:o.P.short,i:a.device,t:a.alert+' open since '+a.start_time_str+'. Is the data logger powered and online? Readings may be incomplete.'});}else if(/trip/i.test(t)){aq++;qs.push(o.P.short+': alert open - '+a.alert+' ('+a.device+') since '+a.start_time_str+'. What is the cause of the trip, and has the inverter been restarted?');rows.push({p:o.P.short,i:a.device,t:a.alert+' open since '+a.start_time_str+'. Cause of trip and has the inverter been restarted?'});}});});dh+=qs.length?`<p style='margin:8px 0 2px'><b>Questions to check</b></p><ol>`+qs.map(function(q){return '<li>'+q+'</li>';}).join('')+'</ol>':'<p>No weak inverter, target shortfall or open alert needs a question today.</p>';htmlGen=html.replace(new RegExp('<p[^>]*><b>Open alerts[^]*?</ul>','g'),'').replace(new RegExp('<p[^>]*><b>Below 85%[^]*?</p>','g'),'').replace(new RegExp('<p[^>]*>No open alerts[.]</p>','g'),'');const mk=html.indexOf('<b>Last 15 days comparison</b>');if(mk>-1){const ps=html.lastIndexOf('<p',mk);html=html.slice(0,ps)+dh+html.slice(ps);}else{html=html+dh;}const allRows=planRows.concat(rows);const OTH=`style='border:1px solid #444;padding:4px 6px;text-align:center;background:#eee'`;const OTD=`style='border:1px solid #444;padding:4px 6px;text-align:left;vertical-align:top'`;const OTC=`style='border:1px solid #444;padding:4px 6px;text-align:center;vertical-align:top'`;obsHtml=`<p>Observations on plant performance for `+dmy(y)+`.</p><p>Inverters are compared on kWh per kWp on the assumption that every inverter in a plant has the same number of panels as per the plant layout (Nimbaj and Magriwada 546 each; Umarda 520 x 3 and 494 x 2). If an inverter is lower than the others, the reason may be dust, shading, a fault, or a difference between the planned and the actual panel count. EPC is requested to reply against each serial number.</p><table style='border-collapse:collapse;width:100%'><tr><th `+OTH+` width='6%'>Sr. No.</th><th `+OTH+` width='12%'>Plant</th><th `+OTH+` width='10%'>Inverter</th><th `+OTH+` width='47%'>Issue</th><th `+OTH+` width='25%'>Reply by EPC</th></tr>`+(allRows.length?allRows.map(function(r,k){return '<tr><td '+OTC+'>'+(k+1)+'</td><td '+OTD+'>'+r.p+'</td><td '+OTD+'>'+r.i+'</td><td '+OTD+'>'+r.t+'</td><td '+OTD+'>&nbsp;<br>&nbsp;<br>&nbsp;</td></tr>';}).join(''):'<tr><td '+OTD+' colspan=5>No observation for this day.</td></tr>')+'</table>';wa.waDate=dmy(y);wa.waGen=ORDER.map(function(id){const o=info[id];return o.pct===null?o.P.short+' no data':o.P.short+' '+num(o.gen)+' kWh ('+num(o.gen/o.P.dc,2)+' per kWp, '+num(o.pct*100)+'% of target)';}).join(', ');wa.waWeak=(weakList.length?weakList.join('; '):'No weak inverters')+(qs.length?'. See email for '+qs.length+' questions to check':'');}const css=`<style>body{font-family:Times New Roman,Times,serif;font-size:14pt;line-height:1.5;text-align:justify;color:#000}h1{font-size:16pt;font-weight:bold;text-transform:uppercase;text-align:center;margin:0 0 8pt}p{margin:6pt 0}table{border-collapse:collapse;font-size:12pt;line-height:1.3;width:100%}th,td{border:1px solid #444;padding:3px 6px}ol,ul{margin:4pt 0 4pt 18pt}li{margin-bottom:4pt}</style>`;function wrap(t,b){return '<!DOCTYPE html><html><head><meta charset=utf-8>'+css+'</head><body><h1>'+t+'</h1>'+b+'</body></html>';}const inner=htmlGen.split('font-size:14px').join('font-size:14pt');routine.json.html=html;routine.json.pdfHtml=wrap(title,inner);routine.json.pdfName=pdfName;Object.keys(wa).forEach(function(k){routine.json[k]=wa[k];});if(obsHtml){const idx=items.indexOf(routine);items.splice(idx+1,0,{json:{type:'routine_email',to:routine.json.to,subject:routine.json.subject,html:'',pdfHtml:wrap('Observation',obsHtml),pdfName:obsName,isObs:true}});}return items;",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      }
+    },
+    {
+      "id": "1d6d5431-7cd3-475a-a4eb-54ae5dc701dc",
+      "name": "Make PDF",
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1.1,
+      "position": [
+        3136,
+        120
+      ],
+      "parameters": {
+        "advancedOptions": {
+          "footer": "<div style='width:100%;text-align:center;font-size:11pt;font-family:Times New Roman'><span class='pageNumber'></span></div>",
+          "margins": "20mm 15mm 25mm 15mm",
+          "mediaType": "print",
+          "name": "={{ $json.pdfName }}",
+          "paperSize": "a4"
+        },
+        "authentication": "apiKey",
+        "convertType": "htmlToPDF",
+        "html": "={{ $json.pdfHtml }}",
+        "operation": "URL/HTML to PDF"
+      }
+    },
+    {
+      "id": "4579f29a-c296-4c3d-812d-1ec73d085c1d",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        3344,
+        120
+      ],
+      "parameters": {
+        "options": {
+          "response": {
+            "response": {
+              "outputPropertyName": "data",
+              "responseFormat": "file"
+            }
+          }
+        },
+        "url": "={{ $json.url }}"
+      }
+    },
+    {
+      "id": "5c448982-e0c9-4a23-9074-0376d143b6dd",
+      "name": "PDF ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3656,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.attachProps ? 'yes' : 'no' }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "yes"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a0661461-cbdc-43ae-a836-aad48395a071",
+      "name": "Send Routine Mail with PDF",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3864,
+        40
+      ],
+      "parameters": {
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "={{ $json.attachProps }}"
+              }
+            ]
+          }
+        },
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}"
+      },
+      "webhookId": "b578aab2-27e8-43d3-9771-fc3ad78cd614"
+    },
+    {
+      "id": "6ca59ea7-ff81-4896-b4c9-92586e87d9f1",
+      "name": "Combine PDFs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3448,
+        120
+      ],
+      "parameters": {
+        "jsCode": "const its=$input.all();const m=$('Add Diagnostics').all().filter(function(i){return i.json.type==='routine_email';})[0].json;const out={json:{to:m.to,subject:m.subject,html:m.html,attachProps:''},binary:{}};const keys=['data','obs','inv'];const props=[];its.forEach(function(it,i){const d=it.binary&&it.binary.data;if(d&&keys[i]){out.binary[keys[i]]=d;props.push(keys[i]);}});out.json.attachProps=props.join(',');return [out];",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      }
+    },
+    {
+      "id": "1aa618a4-9fd7-4559-b96f-f6ced1bf21a9",
+      "name": "Inverter PDF Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2576,
+        640
+      ],
+      "parameters": {
+        "jsCode": "const items=$input.all();const r=items.filter(function(i){return i.json.type==='routine_email'&&!i.json.isObs;})[0];if(!r||!r.json.html||!r.json.waDate){return items;}const h=r.json.html;const a=h.indexOf('<b>Inverter performance and problem summary</b>');if(a<0){return items;}const s=h.lastIndexOf('<p',a);const b=h.indexOf('<b>Questions to check</b>');const m=h.indexOf('<b>Last 15 days comparison</b>');let e=h.length;if(b>-1){e=h.lastIndexOf('<p',b);}else if(m>-1){e=h.lastIndexOf('<p',m);}const body=h.slice(s,e).replace('Inverter performance and problem summary','Inverter-wise generation');const css=`<style>body{font-family:Times New Roman,Times,serif;font-size:14pt;line-height:1.5;text-align:justify;color:#000}h1{font-size:16pt;font-weight:bold;text-transform:uppercase;text-align:center;margin:0 0 8pt}p{margin:6pt 0}table{border-collapse:collapse;font-size:12pt;line-height:1.3;width:100%}th,td{border:1px solid #444;padding:3px 6px}</style>`;const page='<!DOCTYPE html><html><head><meta charset=utf-8>'+css+'</head><body><h1>Inverter-wise Generation - '+r.json.waDate+'</h1>'+body+'</body></html>';const it={json:{type:'routine_email',to:r.json.to,subject:r.json.subject,html:'',pdfHtml:page,pdfName:'Inverter_Wise_Generation_'+r.json.waDate+'.pdf',isInv:true}};let pos=items.indexOf(r);items.forEach(function(x,k){if(x.json.isObs){pos=k;}});items.splice(pos+1,0,it);return items;",
+        "language": "javaScript",
+        "mode": "runOnceForAllItems"
+      }
+    }
+  ],
+  "connections": {
+    "Daily 8 AM": {
+      "main": [
+        [
+          {
+            "node": "Mode: Daily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: Daily": {
+      "main": [
+        [
+          {
+            "node": "Login Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login Details": {
+      "main": [
+        [
+          {
+            "node": "Open Login Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Health Check 9-11-13-15-17": {
+      "main": [
+        [
+          {
+            "node": "Mode: Health Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: Health Check": {
+      "main": [
+        [
+          {
+            "node": "Login Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly 1st 8:30 AM": {
+      "main": [
+        [
+          {
+            "node": "Mode: Monthly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mode: Monthly Report": {
+      "main": [
+        [
+          {
+            "node": "Login Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open Login Page": {
+      "main": [
+        [
+          {
+            "node": "Read Login Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Login Token": {
+      "main": [
+        [
+          {
+            "node": "Submit Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Login": {
+      "main": [
+        [
+          {
+            "node": "Check Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Login": {
+      "main": [
+        [
+          {
+            "node": "Login OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login OK?": {
+      "main": [
+        [
+          {
+            "node": "Plan Requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Emergency: Login Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Requests": {
+      "main": [
+        [
+          {
+            "node": "Fetch SolarLive Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch SolarLive Data": {
+      "main": [
+        [
+          {
+            "node": "Assemble Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Output": {
+      "main": [
+        [
+          {
+            "node": "Make PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Daily Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Emergency Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Report": {
+      "main": [
+        [
+          {
+            "node": "Add Diagnostics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make PDF": {
+      "main": [
+        [
+          {
+            "node": "Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF ready?": {
+      "main": [
+        [
+          {
+            "node": "Send Routine Mail with PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Routine Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Combine PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine PDFs": {
+      "main": [
+        [
+          {
+            "node": "PDF ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Diagnostics": {
+      "main": [
+        [
+          {
+            "node": "Inverter PDF Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inverter PDF Item": {
+      "main": [
+        [
+          {
+            "node": "Route Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate",
+    "timezone": "Asia/Kolkata"
+  },
+  "meta": {
+    "note": "Sanitised export. Add your own credentials after import."
+  }
+}
